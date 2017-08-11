@@ -1351,7 +1351,7 @@ class AltToolbarHeaderBar(AltToolbarShared):
         self._setup_headerbar()
 
         # hook the key-press for the application window
-        self.shell.props.window.connect("key-press-event", self._on_key_press)
+        #self.shell.props.window.connect("key-press-event", self._on_key_press)
 
     def add_always_visible_source(self, source):
         """
@@ -1368,6 +1368,11 @@ class AltToolbarHeaderBar(AltToolbarShared):
             if keyname == 'f' and self.current_search_button:
                 self.current_search_button.set_active(
                     not self.current_search_button.get_active())
+                    
+    def _on_searchbar_find(self, widget, param):
+        if self.current_search_button:
+            self.current_search_button.set_active(
+            not self.current_search_button.get_active())
 
     def on_startup(self, *args):
         super(AltToolbarHeaderBar, self).on_startup(*args)
@@ -1385,6 +1390,13 @@ class AltToolbarHeaderBar(AltToolbarShared):
         self._set_toolbar_controller()
 
         self.setup_completed = True
+        
+        action = Gio.SimpleAction.new("searchbarfind")
+        action.connect('activate', self._on_searchbar_find)
+        app = self.shell.props.application
+        app.add_action(action)
+        app.add_accelerator("<Ctrl>F", "app.searchbarfind", None)
+        
 
     def _setup_playbar(self):
         """
