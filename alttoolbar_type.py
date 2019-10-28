@@ -51,8 +51,8 @@ from gi.repository import Gtk
 from gi.repository import Pango
 from gi.repository import RB
 import gi
-gi.require_version('Keybinder', '3.0')
-from gi.repository import Keybinder
+#gi.require_version('Keybinder', '3.0')
+#from gi.repository import Keybinder
 
 
 class AT(object):
@@ -190,10 +190,10 @@ class AltToolbarBase(GObject.Object):
         :param args:
         :return:
         """
-
         self.startup_completed = True
-        self.reset_categories_pos(self.shell.props.selected_page)
-        self.reset_toolbar(self.shell.props.selected_page)
+        selected_page = self.shell.props.selected_page
+        self.reset_categories_pos(selected_page)
+        self.reset_toolbar(selected_page)
         # lets hide the ghastly floating bar in RB 3.4.3
         cssdata = """
         .floating-bar {
@@ -209,7 +209,9 @@ class AltToolbarBase(GObject.Object):
             cssprovider,
             Gtk.STYLE_PROVIDER_PRIORITY_USER,
         )
-        self.reset_entryview(self.shell.props.selected_page)
+        self.reset_entryview(selected_page)
+        self.rbsearchentry = self.find(selected_page,
+                                       'RBSearchEntry', 'by_name')
 
         if self.plugin.prefer_dark_theme:
             settings = Gtk.Settings.get_default()
@@ -599,7 +601,7 @@ class AltToolbarBase(GObject.Object):
 
     def source_toolbar_visibility(self, visibility):
         """
-           called to toggle the source toolbar
+        Toggle the source toolbar.
         """
         print("source_bar_visibility")
 
@@ -1391,13 +1393,14 @@ class AltToolbarHeaderBar(AltToolbarShared):
         self._setup_playbar()
         self._setup_headerbar()
 
-        # hook the key-press for the application window
-        self.shell.props.window.connect("key-press-event", self._on_key_press)
+        # This is supposed to hook the key-press for the application window,
+        # but RB consume both ^[ and ^F so it doesn't work.
+        #self.shell.props.window.connect("key-press-event", self._on_key_press)
 
         # bind the zoom keyboard shortcuts
-        Keybinder.init()
-        if Keybinder.supported():
-            Keybinder.bind("<Ctrl>f", self._on_search)
+        #Keybinder.init()
+        #if Keybinder.supported():
+        #    Keybinder.bind("<Ctrl>f", self._on_search)
 
     def add_always_visible_source(self, source):
         """
@@ -1447,21 +1450,22 @@ class AltToolbarHeaderBar(AltToolbarShared):
         if action:
             action.set_active(True)
 
-    def search_button_toggled(self, search_button):
-        print("search_button_toggled")
-        print(search_button.get_active())
-
+    def search_button_clicked_callback(self, search_button):
+        """
+        Handle 'clicked' signals emitted by search_button.
+        """
         def delay_hide(*args):
             # we use a delay to allow the searchbar minimise effect to be
             # visible
             self.searchbar.set_visible(False)
 
-        if search_button.get_active():
+        if not self.searchbar.get_visible():
+            self.searchbar.set_search_mode(True)
             self.searchbar.set_visible(True)
+            self.searchentry.grab_focus()
         else:
             GLib.timeout_add(350, delay_hide)
 
-        self.searchbar.set_search_mode(True)
 
     def set_library_labels(self, song_label=None, category_label=None):
         # locale stuff
